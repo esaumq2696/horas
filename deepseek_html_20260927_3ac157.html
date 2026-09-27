@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f172a">
+<title>Control de Horas - Monsefú</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icono.png">
+<link rel="apple-touch-icon" href="./icono.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Horas">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    padding-bottom: 80px;
+    font-size: 15px;
+  }
+  header {
+    background: #1e293b;
+    padding: 14px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid #334155;
+  }
+  header h1 { margin: 0; font-size: 17px; color: #f1f5f9; }
+  header .sub { font-size: 11px; color: #94a3b8; margin-top: 3px; }
+
+  .container { padding: 12px; max-width: 600px; margin: 0 auto; }
+
+  .card {
+    background: #1e293b;
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 1px solid #334155;
+  }
+  .card h2 {
+    margin: 0 0 10px 0;
+    font-size: 13px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
+  .balance-main { text-align: center; padding: 18px 14px; }
+  .balance-main .num {
+    font-size: 40px; font-weight: 700; color: #22d3ee; line-height: 1; margin: 8px 0;
+  }
+  .balance-main .num.neg { color: #f87171; }
+  .balance-main .label {
+    font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .balance-main .equiv {
+    font-size: 13px; color: #cbd5e1; margin-top: 8px;
+    padding-top: 8px; border-top: 1px solid #334155;
+  }
+
+  .form-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .form-row > div { flex: 1; }
+  label {
+    display: block; font-size: 10px; color: #94a3b8; margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  input[type="date"], input[type="time"], input[type="text"], select {
+    width: 100%; padding: 11px; background: #0f172a;
+    border: 1px solid #334155; border-radius: 10px;
+    color: #f1f5f9; font-size: 15px; font-family: inherit;
+  }
+  input:focus, select:focus { outline: none; border-color: #22d3ee; }
+
+  .checkbox-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px; background: #0f172a; border-radius: 10px;
+    border: 1px solid #334155; margin-bottom: 8px; cursor: pointer;
+  }
+  .checkbox-row input { width: 20px; height: 20px; accent-color: #22d3ee; }
+  .checkbox-row span { font-size: 13px; }
+
+  button {
+    width: 100%; padding: 13px; background: #22d3ee; color: #0f172a;
+    border: none; border-radius: 10px; font-size: 14px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+  }
+  button:active { transform: scale(0.98); }
+  button.secondary { background: #334155; color: #e2e8f0; margin-top: 8px; }
+  button.danger { background: #7f1d1d; color: #fecaca; }
+
+  .semana-nav, .cal-nav {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+  }
+  .semana-nav button, .cal-nav button {
+    width: auto; padding: 8px 14px; font-size: 18px;
+    background: #334155; color: #e2e8f0;
+  }
+  .semana-nav .titulo, .cal-nav .titulo {
+    font-size: 13px; font-weight: 600; color: #f1f5f9;
+    text-align: center; flex: 1;
+  }
+  .cal-nav .titulo { font-size: 15px; text-transform: capitalize; }
+
+  .dia-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid #334155; font-size: 13px;
+    cursor: pointer;
+  }
+  .dia-row:last-child { border-bottom: none; }
+  .dia-row:active { background: rgba(34, 211, 238, 0.1); }
+  .dia-row .dia-nombre { color: #94a3b8; width: 80px; font-size: 12px; }
+  .dia-row .dia-horas {
+    color: #e2e8f0; flex: 1; text-align: center; font-variant-numeric: tabular-nums;
+  }
+  .dia-row .dia-total {
+    color: #22d3ee; font-weight: 600; width: 75px; text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .dia-row.empty .dia-horas { color: #475569; font-style: italic; }
+  .dia-row.empty .dia-total { color: #475569; }
+  .dia-row.hoy { background: rgba(34, 211, 238, 0.1); margin: 0 -8px; padding: 10px 8px; border-radius: 8px; }
+  .dia-row.feriado .dia-total { color: #fbbf24; }
+  .dia-row.compensatorio .dia-total { color: #60a5fa; }
+  .dia-row.falta .dia-total { color: #f87171; }
+  .dia-row.descanso .dia-total { color: #64748b; }
+  .dia-row.estimado .dia-horas { color: #c4b5fd; }
+  .dia-row.estimado .dia-total { color: #a78bfa; }
+
+  .resumen-semana { margin-top: 12px; padding-top: 12px; border-top: 2px solid #334155; }
+  .resumen-linea {
+    display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px;
+  }
+  .resumen-linea .label { color: #94a3b8; }
+  .resumen-linea .val { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .resumen-linea.total .label { color: #f1f5f9; font-weight: 600; }
+  .resumen-linea.total .val { color: #22d3ee; font-size: 15px; }
+  .resumen-linea.banco .val { color: #22c55e; }
+  .resumen-linea.banco.neg .val { color: #f87171; }
+
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;
+  }
+  .cal-dow {
+    text-align: center; font-size: 10px; color: #64748b;
+    font-weight: 600; padding: 6px 0; text-transform: uppercase;
+  }
+  .cal-dia {
+    aspect-ratio: 1;
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    border: 1px solid #1e293b;
+    transition: transform 0.1s;
+    min-height: 48px;
+  }
+  .cal-dia:active { transform: scale(0.95); }
+  .cal-dia.otro-mes { opacity: 0.3; }
+  .cal-dia.hoy { border: 2px solid #22d3ee; }
+  .cal-dia .num { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  .cal-dia .hrs { font-size: 9px; color: #22d3ee; font-weight: 700; text-align: right; }
+  .cal-dia.trabajado { background: rgba(34, 211, 238, 0.15); }
+  .cal-dia.trabajado .num { color: #22d3ee; }
+  .cal-dia.nocturno { background: rgba(99, 102, 241, 0.2); }
+  .cal-dia.nocturno .num { color: #a5b4fc; }
+  .cal-dia.nocturno .hrs { color: #a5b4fc; }
+  .cal-dia.feriado { background: rgba(251, 191, 36, 0.15); }
+  .cal-dia.feriado .num { color: #fbbf24; }
+  .cal-dia.feriado .hrs { color: #fbbf24; font-size: 10px; }
+  .cal-dia.compensatorio { background: rgba(96, 165, 250, 0.15); }
+  .cal-dia.compensatorio .num { color: #60a5fa; }
+  .cal-dia.compensatorio .hrs { color: #60a5fa; font-size: 10px; }
+  .cal-dia.falta { background: rgba(248, 113, 113, 0.15); }
+  .cal-dia.falta .num { color: #f87171; }
+  .cal-dia.falta .hrs { color: #f87171; font-size: 10px; }
+  .cal-dia.descanso { background: rgba(100, 116, 139, 0.1); }
+  .cal-dia.descanso .num { color: #64748b; }
+  .cal-dia.estimado { background: rgba(167, 139, 250, 0.15); }
+  .cal-dia.estimado .num { color: #a78bfa; }
+  .cal-dia.estimado .hrs { color: #a78bfa; }
+
+  .cal-leyenda {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid #334155; font-size: 11px; color: #94a3b8;
+  }
+  .cal-leyenda span { display: flex; align-items: center; gap: 4px; }
+  .cal-leyenda .dot {
+    width: 10px; height: 10px; border-radius: 3px; display: inline-block;
+  }
+
+  .mes-resumen { margin-top: 12px; padding-top: 12px; border-top: 2px solid #334155; }
+  .mes-total-row {
+    display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px;
+  }
+  .mes-total-row .lbl { color: #94a3b8; }
+  .mes-total-row .vl { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .mes-total-row.banco .vl { color: #22c55e; }
+  .mes-total-row.banco.neg .vl { color: #f87171; }
+
+  .registro-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 11px 0; border-bottom: 1px solid #334155; font-size: 13px;
+  }
+  .registro-item:last-child { border-bottom: none; }
+  .registro-item .info { flex: 1; }
+  .registro-item .fecha { color: #f1f5f9; font-weight: 500; }
+  .registro-item .detalle { color: #94a3b8; font-size: 11px; margin-top: 2px; }
+  .registro-item .total {
+    color: #22d3ee; font-weight: 600; font-variant-numeric: tabular-nums; margin-right: 10px;
+  }
+  .registro-item .del {
+    background: transparent; border: none; color: #f87171;
+    font-size: 18px; width: 28px; padding: 0; cursor: pointer;
+  }
+
+  .tabs {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #1e293b; border-top: 1px solid #334155;
+    display: flex; padding: 6px 0; z-index: 20;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom));
+  }
+  .tabs button {
+    flex: 1; background: transparent; color: #64748b; border: none;
+    padding: 6px 2px; font-size: 9px; font-weight: 600;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    cursor: pointer; border-radius: 0; width: auto;
+  }
+  .tabs button.active { color: #22d3ee; }
+  .tabs button .icon { font-size: 19px; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .toast {
+    position: fixed; top: 75px; left: 50%; transform: translateX(-50%);
+    background: #22d3ee; color: #0f172a; padding: 11px 18px;
+    border-radius: 10px; font-weight: 600; font-size: 13px;
+    z-index: 100; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    max-width: 90%; text-align: center;
+  }
+  .toast.show { opacity: 1; }
+
+  .vacio { text-align: center; padding: 28px 18px; color: #64748b; font-size: 13px; }
+
+  details summary {
+    cursor: pointer; color: #94a3b8; font-size: 12px;
+    padding: 8px 0; user-select: none;
+  }
+  details[open] summary { color: #22d3ee; }
+
+  textarea {
+    width: 100%; padding: 10px; background: #0f172a;
+    border: 1px solid #334155; border-radius: 10px;
+    color: #f1f5f9; font-family: monospace; font-size: 11px;
+    min-height: 100px; resize: vertical;
+  }
+
+  .badge {
+    display: inline-block; font-size: 9px; padding: 1px 5px;
+    border-radius: 4px; margin-left: 5px; font-weight: 600;
+    vertical-align: middle;
+  }
+  .badge.nocturno { background: #312e81; color: #a5b4fc; }
+  .badge.estimado { background: #4c1d95; color: #c4b5fd; }
+  .badge.aprox { background: #713f12; color: #fde68a; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⏱️ Control de Horas</h1>
+  <div class="sub" id="headerSub">Monsefú Quispe Esaú · Bomarea - Mantenimiento</div>
+</header>
+
+<div class="container">
+
+  <div class="tab-content active" id="tab-hoy">
+    <div class="card balance-main">
+      <div class="label">Banco de horas</div>
+      <div class="num" id="balanceNum">0h 00m</div>
+      <div class="equiv" id="balanceEquiv">Calculando...</div>
+    </div>
+
+    <div class="card">
+      <h2 id="formTitle">Registrar día</h2>
+      <div class="form-row">
+        <div>
+          <label>Fecha</label>
+          <input type="date" id="fecha">
+        </div>
+        <div>
+          <label>Tipo de día</label>
+          <select id="tipo">
+            <option value="normal">Normal</option>
+            <option value="feriado">🎉 Feriado (no trabajado)</option>
+            <option value="compensatorio">🏖️ Compensatorio</option>
+            <option value="falta">❌ Falta</option>
+            <option value="descanso">😴 Descanso semanal</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row" id="rowHoras">
+        <div>
+          <label>Entrada</label>
+          <input type="time" id="entrada">
+        </div>
+        <div>
+          <label>Salida</label>
+          <input type="time" id="salida">
+        </div>
+      </div>
+      <label class="checkbox-row" id="rowComida">
+        <input type="checkbox" id="comida" checked>
+        <span>🍽️ Salió a comer (solo &gt;6h)</span>
+      </label>
+      <label class="checkbox-row" id="rowNocturno">
+        <input type="checkbox" id="nocturno">
+        <span>🌙 Turno nocturno (cruzó medianoche)</span>
+      </label>
+      <button id="btnGuardar">Guardar día</button>
+      <button class="secondary" id="btnCancelar" style="display:none;">Cancelar edición</button>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-semana">
+    <div class="card">
+      <div class="semana-nav">
+        <button id="semPrev">‹</button>
+        <div class="titulo" id="semTitulo">-</div>
+        <button id="semNext">›</button>
+      </div>
+      <div id="semLista"></div>
+      <div class="resumen-semana" id="semResumen"></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-calendario">
+    <div class="card">
+      <div class="cal-nav">
+        <button id="calPrev">‹</button>
+        <div class="titulo" id="calTitulo">-</div>
+        <button id="calNext">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-leyenda">
+        <span><span class="dot" style="background:#22d3ee"></span>Trabajado</span>
+        <span><span class="dot" style="background:#a5b4fc"></span>Nocturno</span>
+        <span><span class="dot" style="background:#fbbf24"></span>Feriado</span>
+        <span><span class="dot" style="background:#60a5fa"></span>Compensatorio</span>
+        <span><span class="dot" style="background:#a78bfa"></span>Estimado</span>
+        <span><span class="dot" style="background:#f87171"></span>Falta</span>
+        <span><span class="dot" style="background:#64748b"></span>Descanso</span>
+      </div>
+      <div class="mes-resumen" id="mesResumen"></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-historial">
+    <div class="card">
+      <h2>Historial completo</h2>
+      <div id="histLista"></div>
+    </div>
+    <div class="card">
+      <h2>Exportar</h2>
+      <button class="secondary" id="btnExportarCSV">📄 Exportar CSV (Excel)</button>
+      <button class="secondary" id="btnExportarPDF" style="margin-top:8px;">🖨️ Exportar PDF (imprimir)</button>
+      <button class="secondary" id="btnExportarTexto" style="margin-top:8px;">📋 Copiar resumen semanal</button>
+      <details style="margin-top:12px;">
+        <summary>Importar / Exportar JSON</summary>
+        <textarea id="jsonArea" placeholder='Pega aquí el JSON...'></textarea>
+        <button class="secondary" id="btnImportarJSON" style="margin-top:8px;">Importar JSON</button>
+        <button class="secondary" id="btnVerJSON" style="margin-top:8px;">Ver JSON actual</button>
+      </details>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-config">
+    <div class="card">
+      <h2>Datos personales</h2>
+      <div class="form-row">
+        <div>
+          <label>Nombre</label>
+          <input type="text" id="cfgNombre">
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Empresa</label>
+          <input type="text" id="cfgEmpresa">
+        </div>
+        <div>
+          <label>Área</label>
+          <input type="text" id="cfgArea">
+        </div>
+      </div>
+      <h2 style="margin-top:14px;">Reglas de cálculo</h2>
+      <div class="form-row">
+        <div>
+          <label>Horas semanales base</label>
+          <input type="text" id="cfgHoras">
+        </div>
+        <div>
+          <label>Minutos comida</label>
+          <input type="text" id="cfgComida">
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Horas compensatorio</label>
+          <input type="text" id="cfgCompensatorio">
+        </div>
+        <div>
+          <label>Horas feriado</label>
+          <input type="text" id="cfgFeriado">
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Umbral comida (h)</label>
+          <input type="text" id="cfgUmbral">
+        </div>
+        <div>
+          <label>Horas por día libre</label>
+          <input type="text" id="cfgDiaLibre">
+        </div>
+      </div>
+      <button id="btnGuardarConfig">Guardar configuración</button>
+      <button class="secondary" id="btnResetConfig">Restaurar por defecto</button>
+    </div>
+    <div class="card">
+      <h2>Datos</h2>
+      <button class="danger" id="btnBorrarTodo">Borrar todos los registros</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="tabs">
+  <button class="active" data-tab="hoy"><span class="icon">➕</span>Hoy</button>
+  <button data-tab="semana"><span class="icon">📅</span>Semana</button>
+  <button data-tab="calendario"><span class="icon">🗓️</span>Calendario</button>
+  <button data-tab="historial"><span class="icon">📋</span>Historial</button>
+  <button data-tab="config"><span class="icon">⚙️</span>Config</button>
+</div>
+
+<script>
+// ==================== CONFIG ====================
+const DEFAULT_CONFIG = {
+  horasSemanales: 48,
+  minutosComida: 45,
+  horasCompensatorio: 8,
+  horasFeriado: 8,
+  umbralComida: 6,
+  horasPorDiaLibre: 8,
+  inicioSemana: 1,
+  nombre: "Monsefú Quispe Esaú",
+  empresa: "Bomarea",
+  area: "Mantenimiento"
+};
+let CONFIG = { ...DEFAULT_CONFIG };
+
+const STORAGE_KEY = 'controlHoras_v4';
+const CONFIG_KEY = 'controlHoras_config_v4';
+
+const DATOS_INICIALES = {
+  "2026-06-08": { tipo: "estimado", horasEstimadas: 52 },
+  "2026-06-15": { tipo: "estimado", horasEstimadas: 52 },
+  "2026-06-22": { tipo: "estimado", horasEstimadas: 52 },
+  "2026-06-29": { tipo: "feriado" },
+  "2026-06-30": { entrada: "10:00", salida: "21:45", comida: true, tipo: "normal", aprox: true, nota: "Estimado 11h" },
+  "2026-07-01": { entrada: "09:29", salida: "20:29", comida: true, tipo: "normal" },
+  "2026-07-02": { entrada: "10:31", salida: "21:01", comida: true, tipo: "normal" },
+  "2026-07-03": { entrada: "10:37", salida: "17:23", comida: true, tipo: "normal" },
+  "2026-07-04": { tipo: "descanso" },
+  "2026-07-05": { tipo: "descanso" },
+  "2026-07-06": { entrada: "10:27", salida: "21:52", comida: true, tipo: "normal" },
+  "2026-07-07": { entrada: "10:24", salida: "22:50", comida: true, tipo: "normal" },
+  "2026-07-08": { entrada: "11:06", salida: "00:21", comida: true, tipo: "normal", nocturno: true },
+  "2026-07-09": { entrada: "10:22", salida: "22:06", comida: true, tipo: "normal" },
+  "2026-07-10": { entrada: "10:42", salida: "17:30", comida: true, tipo: "normal" },
+  "2026-07-11": { tipo: "descanso" },
+  "2026-07-12": { tipo: "descanso" },
+  "2026-07-13": { entrada: "10:32", salida: "22:51", comida: true, tipo: "normal" },
+  "2026-07-14": { entrada: "09:34", salida: "23:43", comida: true, tipo: "normal" },
+  "2026-07-15": { entrada: "09:26", salida: "21:20", comida: true, tipo: "normal" },
+  "2026-07-16": { entrada: "10:34", salida: "21:14", comida: true, tipo: "normal" },
+  "2026-07-17": { entrada: "09:48", salida: "17:02", comida: true, tipo: "normal" },
+  "2026-07-18": { tipo: "descanso" },
+  "2026-07-19": { tipo: "descanso" },
+  "2026-07-20": { tipo: "descanso" },
+  "2026-07-21": { entrada: "19:54", salida: "08:55", comida: true, tipo: "normal", nocturno: true },
+  "2026-07-22": { entrada: "20:13", salida: "04:51", comida: true, tipo: "normal", nocturno: true },
+  "2026-07-23": { entrada: "20:30", salida: "04:00", comida: true, tipo: "normal", nocturno: true },
+  "2026-07-24": { entrada: "17:32", salida: "01:00", comida: true, tipo: "normal", nocturno: true },
+  "2026-07-25": { entrada: "10:42", salida: "19:27", comida: true, tipo: "normal", aprox: true, nota: "Pagaron 8h netas" },
+  "2026-07-26": { tipo: "descanso" },
+  "2026-07-27": { tipo: "feriado" },
+  "2026-07-28": { tipo: "feriado" },
+  "2026-07-29": { tipo: "feriado" },
+  "2026-07-30": { entrada: "19:50", salida: "05:02", comida: true, tipo: "normal", nocturno: true },
+  "2026-07-31": { entrada: "20:15", salida: "06:45", comida: true, tipo: "normal", nocturno: true },
+  "2026-08-01": { tipo: "descanso" },
+  "2026-08-02": { entrada: "09:02", salida: "17:47", comida: true, tipo: "normal", aprox: true, nota: "Pagaron 8h netas" },
+  "2026-08-03": { entrada: "19:45", salida: "08:13", comida: true, tipo: "normal", nocturno: true },
+  "2026-08-04": { entrada: "20:32", salida: "07:32", comida: true, tipo: "normal", nocturno: true },
+  "2026-08-05": { entrada: "20:35", salida: "04:20", comida: true, tipo: "normal", nocturno: true },
+  "2026-08-06": { entrada: "20:23", salida: "03:36", comida: true, tipo: "normal", nocturno: true },
+  "2026-08-07": { tipo: "feriado" },
+  "2026-08-08": { tipo: "descanso" },
+  "2026-08-09": { tipo: "descanso" },
+  "2026-08-10": { entrada: "20:51", salida: "08:41", comida: true, tipo: "normal", nocturno: true },
+  "2026-08-11": { entrada: "20:30", salida: "06:34", comida: true, tipo: "normal", nocturno: true },
+  "2026-08-12": { entrada: "20:24", salida: "04:29", comida: true, tipo: "normal", nocturno: true },
+  "2026-08-13": { entrada: "20:29", salida: "04:00", comida: true, tipo: "normal", nocturno: true },
+  "2026-08-14": { entrada: "18:08", salida: "01:37", comida: true, tipo: "normal", nocturno: true },
+  "2026-08-15": { tipo: "descanso" },
+  "2026-08-16": { tipo: "descanso" },
+  "2026-08-17": { entrada: "20:45", salida: "06:34", comida: true, tipo: "normal", nocturno: true },
+  "2026-08-18": { entrada: "18:25", salida: "05:06", comida: true, tipo: "normal", nocturno: true },
+  "2026-08-19": { entrada: "20:26", salida: "03:56", comida: true, tipo: "normal", nocturno: true },
+  "2026-08-20": { entrada: "18:26", salida: "03:23", comida: true, tipo: "normal", nocturno: true },
+  "2026-08-21": { entrada: "18:22", salida: "04:21", comida: true, tipo: "normal", nocturno: true },
+  "2026-08-22": { tipo: "descanso" },
+  "2026-08-23": { tipo: "descanso" },
+  "2026-08-24": { tipo: "descanso" },
+  "2026-08-25": { tipo: "compensatorio" },
+  "2026-08-26": { entrada: "10:19", salida: "23:35", comida: true, tipo: "normal" },
+  "2026-08-27": { entrada: "09:33", salida: "00:41", comida: true, tipo: "normal", nocturno: true },
+  "2026-08-28": { entrada: "10:39", salida: "21:53", comida: true, tipo: "normal" },
+  "2026-08-29": { entrada: "09:00", salida: "18:00", comida: true, tipo: "normal" },
+  "2026-08-30": { tipo: "descanso" },
+  "2026-08-31": { entrada: "10:10", salida: "22:30", comida: true, tipo: "normal", aprox: true },
+  "2026-09-01": { entrada: "09:00", salida: "21:41", comida: true, tipo: "normal" },
+  "2026-09-02": { entrada: "09:06", salida: "20:47", comida: true, tipo: "normal" },
+  "2026-09-03": { entrada: "09:11", salida: "21:38", comida: true, tipo: "normal" },
+  "2026-09-04": { entrada: "09:08", salida: "20:09", comida: true, tipo: "normal" },
+  "2026-09-05": { tipo: "descanso" },
+  "2026-09-06": { tipo: "descanso" },
+  "2026-09-07": { entrada: "20:21", salida: "08:14", comida: true, tipo: "normal", nocturno: true },
+  "2026-09-08": { entrada: "21:10", salida: "09:20", comida: true, tipo: "normal", nocturno: true },
+  "2026-09-09": { entrada: "20:30", salida: "09:09", comida: true, tipo: "normal", nocturno: true },
+  "2026-09-10": { entrada: "20:20", salida: "07:35", comida: true, tipo: "normal", nocturno: true },
+  "2026-09-11": { entrada: "18:30", salida: "05:20", comida: true, tipo: "normal", nocturno: true },
+  "2026-09-12": { tipo: "descanso" },
+  "2026-09-13": { tipo: "descanso" },
+  "2026-09-14": { entrada: "13:10", salida: "00:19", comida: true, tipo: "normal", nocturno: true },
+  "2026-09-15": { entrada: "09:40", salida: "22:21", comida: true, tipo: "normal" },
+  "2026-09-16": { entrada: "09:59", salida: "20:44", comida: true, tipo: "normal" },
+  "2026-09-17": { entrada: "12:33", salida: "00:50", comida: true, tipo: "normal", nocturno: true },
+  "2026-09-18": { entrada: "12:33", salida: "20:37", comida: true, tipo: "normal" },
+  "2026-09-19": { tipo: "descanso" },
+  "2026-09-20": { tipo: "descanso" },
+  "2026-09-21": { entrada: "12:50", salida: "23:40", comida: true, tipo: "normal" },
+  "2026-09-22": { entrada: "12:25", salida: "02:17", comida: true, tipo: "normal", nocturno: true },
+  "2026-09-23": { entrada: "12:53", salida: "23:21", comida: true, tipo: "normal" },
+  "2026-09-24": { entrada: "10:24", salida: "22:40", comida: true, tipo: "normal" },
+  "2026-09-25": { entrada: "10:31", salida: "18:49", comida: true, tipo: "normal" }
+};
+
+function cargarDatos() {
+  try {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (d === null) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(DATOS_INICIALES));
+      return JSON.parse(JSON.stringify(DATOS_INICIALES));
+    }
+    return d;
+  } catch(e) { return JSON.parse(JSON.stringify(DATOS_INICIALES)); }
+}
+function guardarDatos(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+
+function cargarConfig() {
+  try {
+    const c = JSON.parse(localStorage.getItem(CONFIG_KEY));
+    return c ? { ...DEFAULT_CONFIG, ...c } : { ...DEFAULT_CONFIG };
+  } catch(e) { return { ...DEFAULT_CONFIG }; }
+}
+function guardarConfig() { localStorage.setItem(CONFIG_KEY, JSON.stringify(CONFIG)); }
+
+let registros = cargarDatos();
+CONFIG = cargarConfig();
+
+function fmtHoras(minutos) {
+  const neg = minutos < 0;
+  minutos = Math.abs(Math.round(minutos));
+  const h = Math.floor(minutos / 60);
+  const m = minutos % 60;
+  return (neg ? '-' : '') + h + 'h ' + String(m).padStart(2, '0') + 'm';
+}
+
+function timeToMin(t) {
+  if (!t) return null;
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function fechaKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + d;
+}
+
+function parseFechaLocal(key) {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d, 12, 0, 0);
+}
+
+function calcularMinutos(reg) {
+  if (!reg) return 0;
+  if (reg.tipo === 'estimado') return (reg.horasEstimadas || 0) * 60;
+  if (reg.tipo === 'feriado' || reg.tipo === 'compensatorio' ||
+      reg.tipo === 'falta' || reg.tipo === 'descanso') return 0;
+  if (!reg.entrada || !reg.salida) return 0;
+  let e = timeToMin(reg.entrada);
+  let s = timeToMin(reg.salida);
+  let brutos;
+  if (reg.nocturno) {
+    brutos = s - e;
+    if (brutos <= 0) brutos += 24 * 60;
+  } else {
+    brutos = s - e;
+    if (brutos < 0) brutos += 24 * 60;
+  }
+  if (brutos > CONFIG.umbralComida * 60 && reg.comida !== false) {
+    brutos -= CONFIG.minutosComida;
+  }
+  return brutos;
+}
+
+function inicioSemana(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = (day - CONFIG.inicioSemana + 7) % 7;
+  d.setDate(d.getDate() - diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function diasSemana(inicio) {
+  const arr = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(inicio);
+    d.setDate(d.getDate() + i);
+    arr.push(d);
+  }
+  return arr;
+}
+
+function calcularBancoTotal() {
+  const semanas = {};
+  for (const key in registros) {
+    const reg = registros[key];
+    if (!reg) continue;
+    const fecha = parseFechaLocal(key);
+    const ini = inicioSemana(fecha);
+    const iniKey = fechaKey(ini);
+    if (!semanas[iniKey]) semanas[iniKey] = { total: 0, feriados: 0 };
+    semanas[iniKey].total += calcularMinutos(reg);
+    if (reg.tipo === 'feriado') semanas[iniKey].feriados++;
+  }
+  let total = 0;
+  for (const iniKey in semanas) {
+    const s = semanas[iniKey];
+    const baseSemana = CONFIG.horasSemanales * 60 - (s.feriados * CONFIG.horasFeriado * 60);
+    total += s.total - baseSemana;
+  }
+  return total;
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function actualizarBalance() {
+  const total = calcularBancoTotal();
+  const num = document.getElementById('balanceNum');
+  num.textContent = fmtHoras(total);
+  num.classList.toggle('neg', total < 0);
+
+  const dias = total / 60 / CONFIG.horasPorDiaLibre;
+  const diasEnteros = Math.floor(dias);
+  const restoHoras = (dias - diasEnteros) * CONFIG.horasPorDiaLibre;
+  let equiv = '';
+  if (total >= 0) {
+    equiv = diasEnteros + ' día(s) libre(s)';
+    if (restoHoras > 0.1) equiv += ' + ' + fmtHoras(restoHoras * 60);
+  } else {
+    equiv = 'Debes ' + fmtHoras(Math.abs(total));
+  }
+  document.getElementById('balanceEquiv').textContent = equiv;
+}
+
+let editandoKey = null;
+
+function setFormFecha(key) {
+  document.getElementById('fecha').value = key;
+  const reg = registros[key];
+  if (reg) {
+    document.getElementById('tipo').value = reg.tipo || 'normal';
+    document.getElementById('entrada').value = reg.entrada || '';
+    document.getElementById('salida').value = reg.salida || '';
+    document.getElementById('comida').checked = reg.comida !== false;
+    document.getElementById('nocturno').checked = !!reg.nocturno;
+    document.getElementById('formTitle').textContent = 'Editar: ' + key;
+    document.getElementById('btnCancelar').style.display = 'block';
+    editandoKey = key;
+  } else {
+    document.getElementById('tipo').value = 'normal';
+    document.getElementById('entrada').value = '';
+    document.getElementById('salida').value = '';
+    document.getElementById('comida').checked = true;
+    document.getElementById('nocturno').checked = false;
+    document.getElementById('formTitle').textContent = 'Registrar día';
+    document.getElementById('btnCancelar').style.display = 'none';
+    editandoKey = null;
+  }
+  actualizarVisibilidadForm();
+}
+
+function actualizarVisibilidadForm() {
+  const tipo = document.getElementById('tipo').value;
+  const mostrar = tipo === 'normal';
+  document.getElementById('rowHoras').style.display = mostrar ? 'flex' : 'none';
+  document.getElementById('rowComida').style.display = mostrar ? 'flex' : 'none';
+  document.getElementById('rowNocturno').style.display = mostrar ? 'flex' : 'none';
+}
+
+function guardar() {
+  const fecha = document.getElementById('fecha').value;
+  const tipo = document.getElementById('tipo').value;
+  const entrada = document.getElementById('entrada').value;
+  const salida = document.getElementById('salida').value;
+  const comida = document.getElementById('comida').checked;
+  const nocturno = document.getElementById('nocturno').checked;
+
+  if (!fecha) { toast('Selecciona una fecha'); return; }
+
+  if (tipo === 'normal') {
+    if (!entrada || !salida) { toast('Ingresa entrada y salida'); return; }
+    registros[fecha] = { entrada, salida, comida, nocturno, tipo };
+  } else {
+    registros[fecha] = { tipo };
+  }
+
+  guardarDatos(registros);
+  toast('✅ Guardado');
+  setFormFecha(fecha);
+  actualizarBalance();
+  renderSemana();
+  renderCalendario();
+  renderHistorial();
+}
+
+let semanaOffset = 0;
+
+function renderSemana() {
+  const hoy = new Date();
+  const iniBase = inicioSemana(hoy);
+  iniBase.setDate(iniBase.getDate() + semanaOffset * 7);
+  const dias = diasSemana(iniBase);
+
+  const fmt = (d) => d.getDate() + '/' + (d.getMonth() + 1);
+  document.getElementById('semTitulo').textContent =
+    fmt(dias[0]) + ' — ' + fmt(dias[6]) + ' ' + dias[0].getFullYear();
+
+  const nombres = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const hoyKey = fechaKey(hoy);
+  let html = '';
+  let totalSemana = 0;
+  let feriados = 0;
+  let compensatorios = 0;
+
+  dias.forEach(d => {
+    const key = fechaKey(d);
+    const reg = registros[key];
+    let min = 0;
+    let tipo = 'normal';
+    if (reg) {
+      tipo = reg.tipo || 'normal';
+      min = calcularMinutos(reg);
+    }
+    totalSemana += min;
+    if (tipo === 'feriado') feriados++;
+    if (tipo === 'compensatorio') compensatorios++;
+
+    const esHoy = key === hoyKey ? ' hoy' : '';
+    const tipoClass = (tipo !== 'normal' && reg) ? ' ' + tipo : '';
+    const vacio = (!reg || (min === 0 && tipo === 'normal')) ? ' empty' : '';
+
+    let horasStr = '—';
+    let badge = '';
+    if (reg) {
+      if (tipo === 'estimado') {
+        horasStr = '⚠️ Estimado: ' + (reg.horasEstimadas || 0) + 'h';
+      } else if (tipo === 'normal' && reg.entrada && reg.salida) {
+        horasStr = reg.entrada + ' → ' + reg.salida;
+        if (reg.nocturno) badge = '<span class="badge nocturno">🌙</span>';
+        if (reg.aprox) badge += '<span class="badge aprox">~</span>';
+      } else if (tipo === 'feriado') {
+        horasStr = '🎉 Feriado';
+      } else if (tipo === 'compensatorio') {
+        horasStr = '🏖️ Compensatorio';
+      } else if (tipo === 'falta') {
+        horasStr = '❌ Falta';
+      } else if (tipo === 'descanso') {
+        horasStr = '😴 Descanso';
+      }
+    }
+
+    html += `<div class="dia-row${vacio}${esHoy}${tipoClass}" data-key="${key}">
+      <div class="dia-nombre">${nombres[d.getDay()]} ${d.getDate()}</div>
+      <div class="dia-horas">${horasStr}${badge}</div>
+      <div class="dia-total">${min > 0 ? fmtHoras(min) : (tipo !== 'normal' && reg ? '' : '—')}</div>
+    </div>`;
+  });
+  document.getElementById('semLista').innerHTML = html;
+
+  document.querySelectorAll('#semLista .dia-row').forEach(el => {
+    el.onclick = () => {
+      setFormFecha(el.dataset.key);
+      document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelector('.tabs button[data-tab="hoy"]').classList.add('active');
+      document.getElementById('tab-hoy').classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+  });
+
+  const baseSemana = CONFIG.horasSemanales * 60 - (feriados * CONFIG.horasFeriado * 60);
+  const bancoSemana = totalSemana - baseSemana;
+  const bancoClass = bancoSemana < 0 ? ' neg' : '';
+
+  document.getElementById('semResumen').innerHTML = `
+    <div class="resumen-linea">
+      <span class="label">Total trabajado</span>
+      <span class="val">${fmtHoras(totalSemana)}</span>
+    </div>
+    ${feriados > 0 ? `<div class="resumen-linea">
+      <span class="label">🎉 Feriados (${feriados})</span>
+      <span class="val" style="color:#fbbf24;">−${fmtHoras(feriados * CONFIG.horasFeriado * 60)}</span>
+    </div>` : ''}
+    <div class="resumen-linea">
+      <span class="label">Base efectiva</span>
+      <span class="val">${fmtHoras(baseSemana)}</span>
+    </div>
+    <div class="resumen-linea total banco${bancoClass}">
+      <span class="label">${bancoSemana >= 0 ? '➡️ Al banco' : '⬅️ Del banco'}</span>
+      <span class="val">${fmtHoras(bancoSemana)}</span>
+    </div>
+  `;
+}
+
+let mesOffset = 0;
+
+function renderCalendario() {
+  const hoy = new Date();
+  const base = new Date(hoy.getFullYear(), hoy.getMonth() + mesOffset, 1);
+  const year = base.getFullYear();
+  const month = base.getMonth();
+
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('calTitulo').textContent = meses[month] + ' ' + year;
+
+  const primerDia = new Date(year, month, 1);
+  const ultimoDia = new Date(year, month + 1, 0);
+  const diasEnMes = ultimoDia.getDate();
+
+  let primerDow = primerDia.getDay();
+  primerDow = (primerDow + 6) % 7;
+
+  let html = '';
+  const dowNames = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  dowNames.forEach(n => html += `<div class="cal-dow">${n}</div>`);
+
+  const mesAnterior = new Date(year, month, 0);
+  const diasMesAnterior = mesAnterior.getDate();
+  for (let i = primerDow - 1; i >= 0; i--) {
+    const dayNum = diasMesAnterior - i;
+    html += `<div class="cal-dia otro-mes"><span class="num">${dayNum}</span></div>`;
+  }
+
+  const hoyKey = fechaKey(hoy);
+  let totalMes = 0, feriadosMes = 0;
+  const semanasDelMes = {};
+
+  for (let d = 1; d <= diasEnMes; d++) {
+    const fecha = new Date(year, month, d);
+    const key = fechaKey(fecha);
+    const reg = registros[key];
+    let min = 0;
+    let clase = '';
+    let mostrarHrs = '';
+    let tipo = 'normal';
+
+    if (reg) {
+      tipo = reg.tipo || 'normal';
+      min = calcularMinutos(reg);
+
+      const iniSem = inicioSemana(fecha);
+      const iniKey = fechaKey(iniSem);
+      if (!semanasDelMes[iniKey]) semanasDelMes[iniKey] = { total: 0, feriados: 0 };
+      semanasDelMes[iniKey].total += min;
+      if (tipo === 'feriado') semanasDelMes[iniKey].feriados++;
+
+      if (tipo === 'estimado') {
+        clase = 'estimado';
+        mostrarHrs = (reg.horasEstimadas || 0) + 'h';
+      } else if (tipo === 'feriado') {
+        clase = 'feriado';
+        mostrarHrs = 'FER';
+      } else if (tipo === 'compensatorio') {
+        clase = 'compensatorio';
+        mostrarHrs = 'COMP';
+      } else if (tipo === 'falta') {
+        clase = 'falta';
+        mostrarHrs = 'FALTA';
+      } else if (tipo === 'descanso') {
+        clase = 'descanso';
+        mostrarHrs = '';
+      } else if (tipo === 'normal' && min > 0) {
+        clase = reg.nocturno ? 'nocturno' : 'trabajado';
+        const h = Math.floor(min / 60);
+        const m = min % 60;
+        mostrarHrs = h + 'h' + (m > 0 ? String(m).padStart(2, '0') : '');
+      }
+    }
+
+    const esHoy = key === hoyKey ? ' hoy' : '';
+    html += `<div class="cal-dia ${clase}${esHoy}" data-key="${key}">
+      <span class="num">${d}</span>
+      <span class="hrs">${mostrarHrs}</span>
+    </div>`;
+
+    totalMes += min;
+    if (tipo === 'feriado') feriadosMes++;
+  }
+
+  const celdasUsadas = primerDow + diasEnMes;
+  const celdasRestantes = (7 - (celdasUsadas % 7)) % 7;
+  for (let d = 1; d <= celdasRestantes; d++) {
+    html += `<div class="cal-dia otro-mes"><span class="num">${d}</span></div>`;
+  }
+
+  document.getElementById('calGrid').innerHTML = html;
+
+  document.querySelectorAll('#calGrid .cal-dia[data-key]').forEach(el => {
+    el.onclick = () => {
+      setFormFecha(el.dataset.key);
+      document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelector('.tabs button[data-tab="hoy"]').classList.add('active');
+      document.getElementById('tab-hoy').classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+  });
+
+  const semanasKeys = Object.keys(semanasDelMes);
+  let bancoMes = 0;
+  semanasKeys.forEach(k => {
+    const s = semanasDelMes[k];
+    const baseSem = CONFIG.horasSemanales * 60 - (s.feriados * CONFIG.horasFeriado * 60);
+    bancoMes += s.total - baseSem;
+  });
+
+  document.getElementById('mesResumen').innerHTML = `
+    <div class="mes-total-row"><span class="lbl">Total trabajado</span><span class="vl">${fmtHoras(totalMes)}</span></div>
+    ${feriadosMes > 0 ? `<div class="mes-total-row"><span class="lbl">🎉 Feriados</span><span class="vl" style="color:#fbbf24;">${feriadosMes}</span></div>` : ''}
+    <div class="mes-total-row banco ${bancoMes < 0 ? 'neg' : ''}"><span class="lbl">Banco del mes</span><span class="vl">${fmtHoras(bancoMes)}</span></div>
+  `;
+}
+
+function renderHistorial() {
+  const keys = Object.keys(registros).sort().reverse();
+  const cont = document.getElementById('histLista');
+  if (keys.length === 0) {
+    cont.innerHTML = '<div class="vacio">No hay registros aún.</div>';
+    return;
+  }
+  const nombres = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  let html = '';
+  keys.forEach(key => {
+    const reg = registros[key];
+    if (!reg) return;
+    const d = parseFechaLocal(key);
+    const fechaStr = nombres[d.getDay()] + ' ' + d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+    const min = calcularMinutos(reg);
+    let detalle = '';
+    let totalStr = '';
+    const tipo = reg.tipo || 'normal';
+
+    if (tipo === 'estimado') {
+      detalle = '⚠️ Semana estimada';
+      totalStr = (reg.horasEstimadas || 0) + 'h';
+    } else if (tipo === 'normal' && reg.entrada) {
+      detalle = reg.entrada + ' → ' + reg.salida;
+      if (reg.nocturno) detalle += ' 🌙';
+      if (reg.aprox) detalle += ' ~';
+      totalStr = fmtHoras(min);
+    } else if (tipo === 'feriado') {
+      detalle = '🎉 Feriado';
+      totalStr = '−8h base';
+    } else if (tipo === 'compensatorio') {
+      detalle = '🏖️ Compensatorio';
+      totalStr = '0h';
+    } else if (tipo === 'falta') {
+      detalle = '❌ Falta';
+      totalStr = '0h';
+    } else if (tipo === 'descanso') {
+      detalle = '😴 Descanso';
+      totalStr = '—';
+    }
+
+    html += `<div class="registro-item">
+      <div class="info">
+        <div class="fecha">${fechaStr}</div>
+        <div class="detalle">${detalle}</div>
+      </div>
+      <div class="total">${totalStr}</div>
+      <button class="del" data-del="${key}">✕</button>
+    </div>`;
+  });
+  cont.innerHTML = html;
+
+  cont.querySelectorAll('.del').forEach(b => {
+    b.onclick = () => {
+      const key = b.dataset.del;
+      if (confirm('¿Borrar el registro del ' + key + '?')) {
+        delete registros[key];
+        guardarDatos(registros);
+        renderHistorial();
+        renderSemana();
+        renderCalendario();
+        actualizarBalance();
+        toast('Eliminado');
+      }
+    };
+  });
+}
+
+function exportarCSV() {
+  const keys = Object.keys(registros).sort();
+  if (keys.length === 0) { toast('No hay datos'); return; }
+  let csv = 'Fecha,Dia,Tipo,Entrada,Salida,Nocturno,Comida,Horas,Minutos\n';
+  const nombres = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  keys.forEach(key => {
+    const reg = registros[key];
+    if (!reg) return;
+    const d = parseFechaLocal(key);
+    const min = calcularMinutos(reg);
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    csv += `${key},${nombres[d.getDay()]},${reg.tipo||'normal'},${reg.entrada||''},${reg.salida||''},${reg.nocturno?'Sí':'No'},${reg.comida===false?'No':'Sí'},${h}:${String(m).padStart(2,'0')},${min}\n`;
+  });
+  const blob = new Blob(["\uFEFF"+csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'horas_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV descargado');
+}
+
+function exportarPDF() {
+  const win = window.open('', '_blank');
+  if (!win) { toast('Permite ventanas emergentes'); return; }
+
+  const keys = Object.keys(registros).sort();
+  const nombres = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  const semanas = {};
+  keys.forEach(key => {
+    const reg = registros[key];
+    if (!reg) return;
+    const fecha = parseFechaLocal(key);
+    const ini = inicioSemana(fecha);
+    const iniKey = fechaKey(ini);
+    if (!semanas[iniKey]) semanas[iniKey] = { dias: [], total: 0, feriados: 0 };
+    semanas[iniKey].dias.push({ key, reg, fecha });
+    semanas[iniKey].total += calcularMinutos(reg);
+    if (reg.tipo === 'feriado') semanas[iniKey].feriados++;
+  });
+
+  const iniKeys = Object.keys(semanas).sort();
+  const bancoTotal = calcularBancoTotal();
+
+  let filasHTML = '';
+  iniKeys.forEach(iniKey => {
+    const s = semanas[iniKey];
+    const ini = parseFechaLocal(iniKey);
+    const fin = new Date(ini); fin.setDate(fin.getDate() + 6);
+
+    filasHTML += `<tr class="semana-header"><td colspan="5">Semana del ${ini.getDate()} al ${fin.getDate()} de ${meses[ini.getMonth()]} ${ini.getFullYear()}</td></tr>`;
+
+    s.dias.sort((a,b) => a.key.localeCompare(b.key)).forEach(d => {
+      const reg = d.reg;
+      const tipo = reg.tipo || 'normal';
+      let entrada = '', salida = '', horas = '', tipoTxt = '';
+
+      if (tipo === 'estimado') {
+        entrada = '—'; salida = '—';
+        horas = (reg.horasEstimadas || 0) + 'h';
+        tipoTxt = '⚠️ Estimado';
+      } else if (tipo === 'normal' && reg.entrada) {
+        entrada = reg.entrada;
+        salida = reg.salida + (reg.nocturno ? ' 🌙' : '') + (reg.aprox ? ' ~' : '');
+        const min = calcularMinutos(reg);
+        const h = Math.floor(min / 60);
+        const m = min % 60;
+        horas = h + 'h ' + String(m).padStart(2,'0') + 'm';
+        tipoTxt = 'Normal';
+      } else if (tipo === 'feriado') {
+        entrada = '—'; salida = '—'; horas = '—'; tipoTxt = '🎉 Feriado';
+      } else if (tipo === 'compensatorio') {
+        entrada = '—'; salida = '—'; horas = '—'; tipoTxt = '🏖️ Compensatorio';
+      } else if (tipo === 'falta') {
+        entrada = '—'; salida = '—'; horas = '—'; tipoTxt = '❌ Falta';
+      } else if (tipo === 'descanso') {
+        entrada = '—'; salida = '—'; horas = '—'; tipoTxt = '😴 Descanso';
+      }
+
+      filasHTML += `<tr>
+        <td>${nombres[d.fecha.getDay()]} ${d.fecha.getDate()}/${d.fecha.getMonth()+1}</td>
+        <td>${entrada}</td>
+        <td>${salida}</td>
+        <td>${horas}</td>
+        <td>${tipoTxt}</td>
+      </tr>`;
+    });
+
+    const baseSem = CONFIG.horasSemanales * 60 - (s.feriados * CONFIG.horasFeriado * 60);
+    const bancoSem = s.total - baseSem;
+
+    filasHTML += `<tr class="resumen-sem">
+      <td colspan="3" style="text-align:right;font-weight:bold;">Total semana:</td>
+      <td style="font-weight:bold;">${fmtHoras(s.total)}</td>
+      <td style="font-weight:bold;color:${bancoSem >= 0 ? 'green' : 'red'};">${fmtHoras(bancoSem)}</td>
+    </tr>`;
+  });
+
+  const hoy = new Date();
+  const fechaHoy = hoy.getDate() + ' de ' + meses[hoy.getMonth()] + ' de ' + hoy.getFullYear();
+
+  win.document.write(`
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Reporte de Horas - ${CONFIG.nombre}</title>
+<style>
+  @page { size: A4; margin: 15mm; }
+  body { font-family: Arial, sans-serif; color: #000; font-size: 11px; }
+  h1 { font-size: 18px; margin: 0 0 4px 0; text-align: center; }
+  .info { text-align: center; margin-bottom: 16px; font-size: 12px; }
+  .info strong { display: block; font-size: 14px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border: 1px solid #333; padding: 4px 6px; text-align: left; font-size: 10px; }
+  th { background: #e5e7eb; font-weight: bold; text-align: center; }
+  .semana-header td { background: #f3f4f6; font-weight: bold; text-align: left; }
+  .resumen-sem td { background: #fafafa; }
+  .totales { margin-top: 14px; font-size: 12px; }
+  .totales table { width: auto; }
+  .totales td { padding: 4px 10px; }
+  .firma { margin-top: 40px; text-align: center; }
+  .firma .linea { border-top: 1px solid #000; width: 200px; margin: 30px auto 4px; }
+  .no-print { margin-bottom: 10px; text-align: center; }
+  .no-print button { padding: 8px 16px; font-size: 13px; cursor: pointer; margin: 0 4px; }
+  @media print { .no-print { display: none; } }
+</style>
+</head>
+<body>
+<div class="no-print">
+  <button onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+  <button onclick="window.close()">✕ Cerrar</button>
+</div>
+
+<h1>REPORTE DE HORAS TRABAJADAS</h1>
+<div class="info">
+  <strong>${CONFIG.nombre}</strong>
+  ${CONFIG.empresa} — ${CONFIG.area}
+  <div style="margin-top:6px;font-size:11px;color:#555;">Generado el ${fechaHoy}</div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:20%;">Fecha</th>
+      <th style="width:15%;">Entrada</th>
+      <th style="width:15%;">Salida</th>
+      <th style="width:20%;">Horas</th>
+      <th style="width:30%;">Tipo</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${filasHTML}
+  </tbody>
+</table>
+
+<div class="totales">
+  <table>
+    <tr>
+      <td><strong>Banco total acumulado:</strong></td>
+      <td style="color:${bancoTotal >= 0 ? 'green' : 'red'};font-weight:bold;">${fmtHoras(bancoTotal)}</td>
+    </tr>
+    <tr>
+      <td><strong>Equivalencia en días libres:</strong></td>
+      <td>${(bancoTotal/60/CONFIG.horasPorDiaLibre).toFixed(2)} días (${CONFIG.horasPorDiaLibre}h por día)</td>
+    </tr>
+  </table>
+</div>
+
+<div class="firma">
+  <div class="linea"></div>
+  <div>${CONFIG.nombre}</div>
+  <div style="font-size:10px;color:#555;">Firma del empleado</div>
+</div>
+
+</body>
+</html>
+  `);
+  win.document.close();
+}
+
+function copiarResumenSemanal() {
+  const semanas = {};
+  for (const key in registros) {
+    const reg = registros[key];
+    if (!reg) continue;
+    const fecha = parseFechaLocal(key);
+    const ini = inicioSemana(fecha);
+    const iniKey = fechaKey(ini);
+    if (!semanas[iniKey]) semanas[iniKey] = { total: 0, feriados: 0, dias: [] };
+    semanas[iniKey].dias.push({ key, reg, min: calcularMinutos(reg) });
+    semanas[iniKey].total += calcularMinutos(reg);
+    if (reg.tipo === 'feriado') semanas[iniKey].feriados++;
+  }
+  const iniKeys = Object.keys(semanas).sort();
+  const nombres = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  let txt = 'RESUMEN SEMANAL DE HORAS\n';
+  txt += CONFIG.nombre + '\n';
+  txt += CONFIG.empresa + ' - ' + CONFIG.area + '\n\n';
+
+  iniKeys.forEach(iniKey => {
+    const s = semanas[iniKey];
+    const ini = parseFechaLocal(iniKey);
+    const fin = new Date(ini); fin.setDate(fin.getDate() + 6);
+    txt += `Semana del ${ini.getDate()}/${ini.getMonth()+1} al ${fin.getDate()}/${fin.getMonth()+1}:\n`;
+    s.dias.sort((a,b) => a.key.localeCompare(b.key)).forEach(d => {
+      const fecha = parseFechaLocal(d.key);
+      const tipo = d.reg.tipo || 'normal';
+      if (tipo === 'estimado') {
+        txt += `  ${nombres[fecha.getDay()]} ${fecha.getDate()}: ⚠️ Estimado ${d.reg.horasEstimadas}h\n`;
+      } else if (tipo === 'normal' && d.reg.entrada) {
+        txt += `  ${nombres[fecha.getDay()]} ${fecha.getDate()}: ${d.reg.entrada}-${d.reg.salida} = ${fmtHoras(d.min)}${d.reg.nocturno?' 🌙':''}${d.reg.aprox?' ~':''}\n`;
+      } else if (tipo === 'feriado') {
+        txt += `  ${nombres[fecha.getDay()]} ${fecha.getDate()}: 🎉 FERIADO\n`;
+      } else if (tipo === 'compensatorio') {
+        txt += `  ${nombres[fecha.getDay()]} ${fecha.getDate()}: 🏖️ COMPENSATORIO\n`;
+      } else if (tipo === 'falta') {
+        txt += `  ${nombres[fecha.getDay()]} ${fecha.getDate()}: ❌ FALTA\n`;
+      } else if (tipo === 'descanso') {
+        txt += `  ${nombres[fecha.getDay()]} ${fecha.getDate()}: 😴 Descanso\n`;
+      }
+    });
+    const baseSem = CONFIG.horasSemanales * 60 - (s.feriados * CONFIG.horasFeriado * 60);
+    const banco = s.total - baseSem;
+    txt += `  Total: ${fmtHoras(s.total)} | Base: ${fmtHoras(baseSem)} | Banco: ${fmtHoras(banco)}\n\n`;
+  });
+  const bancoTotal = calcularBancoTotal();
+  txt += `BANCO TOTAL: ${fmtHoras(bancoTotal)}\n`;
+
+  navigator.clipboard.writeText(txt).then(() => toast('✅ Resumen copiado')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = txt;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast('✅ Copiado');
+  });
+}
+
+function importarJSON() {
+  const txt = document.getElementById('jsonArea').value.trim();
+  if (!txt) { toast('Pega el JSON primero'); return; }
+  try {
+    const data = JSON.parse(txt);
+    let count = 0;
+    for (const key in data) {
+      if (data[key] === null) { delete registros[key]; continue; }
+      registros[key] = data[key];
+      count++;
+    }
+    guardarDatos(registros);
+    renderHistorial();
+    renderSemana();
+    renderCalendario();
+    actualizarBalance();
+    toast('✅ ' + count + ' registros importados');
+  } catch(e) {
+    toast('❌ JSON inválido');
+  }
+}
+
+function cargarFormConfig() {
+  document.getElementById('cfgNombre').value = CONFIG.nombre;
+  document.getElementById('cfgEmpresa').value = CONFIG.empresa;
+  document.getElementById('cfgArea').value = CONFIG.area;
+  document.getElementById('cfgHoras').value = CONFIG.horasSemanales;
+  document.getElementById('cfgComida').value = CONFIG.minutosComida;
+  document.getElementById('cfgCompensatorio').value = CONFIG.horasCompensatorio;
+  document.getElementById('cfgFeriado').value = CONFIG.horasFeriado;
+  document.getElementById('cfgUmbral').value = CONFIG.umbralComida;
+  document.getElementById('cfgDiaLibre').value = CONFIG.horasPorDiaLibre;
+}
+
+function guardarFormConfig() {
+  CONFIG.nombre = document.getElementById('cfgNombre').value || 'Sin nombre';
+  CONFIG.empresa = document.getElementById('cfgEmpresa').value || '';
+  CONFIG.area = document.getElementById('cfgArea').value || '';
+  CONFIG.horasSemanales = parseFloat(document.getElementById('cfgHoras').value) || 48;
+  CONFIG.minutosComida = parseInt(document.getElementById('cfgComida').value) || 45;
+  CONFIG.horasCompensatorio = parseFloat(document.getElementById('cfgCompensatorio').value) || 8;
+  CONFIG.horasFeriado = parseFloat(document.getElementById('cfgFeriado').value) || 8;
+  CONFIG.umbralComida = parseFloat(document.getElementById('cfgUmbral').value) || 6;
+  CONFIG.horasPorDiaLibre = parseFloat(document.getElementById('cfgDiaLibre').value) || 8;
+  guardarConfig();
+  document.getElementById('headerSub').textContent = CONFIG.nombre + (CONFIG.empresa ? ' · ' + CONFIG.empresa + (CONFIG.area ? ' - ' + CONFIG.area : '') : '');
+  actualizarBalance();
+  renderSemana();
+  renderCalendario();
+  renderHistorial();
+  toast('✅ Configuración guardada');
+}
+
+document.querySelectorAll('.tabs button').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.tabs button').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('tab-' + b.dataset.tab).classList.add('active');
+    if (b.dataset.tab === 'semana') renderSemana();
+    if (b.dataset.tab === 'calendario') renderCalendario();
+    if (b.dataset.tab === 'historial') renderHistorial();
+    if (b.dataset.tab === 'config') cargarFormConfig();
+  };
+});
+
+document.getElementById('btnGuardar').onclick = guardar;
+document.getElementById('tipo').onchange = actualizarVisibilidadForm;
+document.getElementById('btnCancelar').onclick = () => setFormFecha(fechaKey(new Date()));
+document.getElementById('fecha').onchange = (e) => setFormFecha(e.target.value);
+
+document.getElementById('semPrev').onclick = () => { semanaOffset--; renderSemana(); };
+document.getElementById('semNext').onclick = () => { semanaOffset++; renderSemana(); };
+document.getElementById('calPrev').onclick = () => { mesOffset--; renderCalendario(); };
+document.getElementById('calNext').onclick = () => { mesOffset++; renderCalendario(); };
+
+document.getElementById('btnExportarCSV').onclick = exportarCSV;
+document.getElementById('btnExportarPDF').onclick = exportarPDF;
+document.getElementById('btnExportarTexto').onclick = copiarResumenSemanal;
+document.getElementById('btnImportarJSON').onclick = importarJSON;
+document.getElementById('btnVerJSON').onclick = () => {
+  document.getElementById('jsonArea').value = JSON.stringify(registros, null, 2);
+  toast('JSON cargado');
+};
+
+document.getElementById('btnGuardarConfig').onclick = guardarFormConfig;
+document.getElementById('btnResetConfig').onclick = () => {
+  CONFIG = { ...DEFAULT_CONFIG };
+  guardarConfig();
+  cargarFormConfig();
+  document.getElementById('headerSub').textContent = CONFIG.nombre + ' · ' + CONFIG.empresa + ' - ' + CONFIG.area;
+  actualizarBalance();
+  renderSemana();
+  renderCalendario();
+  renderHistorial();
+  toast('Configuración restaurada');
+};
+
+document.getElementById('btnBorrarTodo').onclick = () => {
+  if (confirm('¿Borrar TODOS los registros? Esta acción no se puede deshacer.')) {
+    registros = {};
+    guardarDatos(registros);
+    renderHistorial();
+    renderSemana();
+    renderCalendario();
+    actualizarBalance();
+    toast('Todo borrado');
+  }
+};
+
+document.getElementById('fecha').value = fechaKey(new Date());
+setFormFecha(fechaKey(new Date()));
+document.getElementById('headerSub').textContent = CONFIG.nombre + (CONFIG.empresa ? ' · ' + CONFIG.empresa + (CONFIG.area ? ' - ' + CONFIG.area : '') : '');
+actualizarBalance();
+renderSemana();
+renderCalendario();
+renderHistorial();
+
+// ==================== PWA ====================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js')
+      .then(reg => console.log('✅ Service Worker registrado'))
+      .catch(err => console.log('❌ SW error:', err));
+  });
+}
+</script>
+</body>
+</html>
